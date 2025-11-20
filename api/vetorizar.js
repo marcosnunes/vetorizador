@@ -44,6 +44,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Imagem não fornecida' });
     }
 
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      // Retorna 500 se a chave NÃO for encontrada, confirmando o problema
+      return res.status(500).json({ error: 'Erro de Configuração: A chave GEMINI_API_KEY não foi encontrada no ambiente do servidor.' });
+    }
+
     // Inicializa o Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
