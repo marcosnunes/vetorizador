@@ -87,9 +87,9 @@ export default async function handler(req, res) {
       .replace(/```xml/g, '')
       .replace(/```svg/g, '')
       .replace(/```/g, '')
-      .replace(/<\?xml.*\?>/g, '')  // ⭐ NOVO: Remove a declaração XML
-      .replace(/[\x00-\x1F\x7F]/g, '') // ⭐ NOVO: Remove caracteres de controle invisíveis
-      .trim(); // ESSENCIAL: remove espaços e quebras de linha no início/fim
+      .replace(/<\?xml.*\?>/g, '')  
+      .replace(/[\x00-\x1F\x7F]/g, '') 
+      .trim(); 
 
     // 2. Limpeza para remover texto ou comentários antes do <svg>
     const svgStartIndex = svgText.indexOf('<svg');
