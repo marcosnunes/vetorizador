@@ -16,7 +16,7 @@ try {
 }
 
 // --- MAPA ---
-const map = L.map('map').setView([-25.567859, -49.359602], 17);
+const map = L.map('map').setView([-25.567859, -49.359602], 21);
 
 const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   attribution: 'Tiles &copy; Esri',
