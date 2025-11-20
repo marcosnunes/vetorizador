@@ -249,7 +249,7 @@ function converterPixelsParaLatLng(geojson, canvas, mapBounds) {
   const imgHeight = canvas.height;
   const featuresFinais = [];
 
-  const MIN_AREA_METERS = 8.0;
+  const MIN_AREA_METERS = 0.1; // Área mínima para considerar um edifício
   const TOLERANCIA_SIMPLIFICACAO = 0.000005;
 
   if (!geojson || !geojson.features) return turf.featureCollection([]);
