@@ -46,8 +46,11 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      // Retorna 500 se a chave NÃO for encontrada, confirmando o problema
-      return res.status(500).json({ error: 'Erro de Configuração: A chave GEMINI_API_KEY não foi encontrada no ambiente do servidor.' });
+      // Este erro ocorrerá se o Vercel não carregar a variável.
+      return res.status(500).json({ 
+        error: 'ERRO CRÍTICO: Chave GEMINI_API_KEY ausente',
+        details: 'A variável de ambiente não foi carregada pelo servidor Vercel. Verifique as configurações de variáveis de ambiente na Vercel e o escopo (Production/Development).'
+      });
     }
 
     // Inicializa o Gemini
