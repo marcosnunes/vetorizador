@@ -3,8 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export default async function handler(req, res) {
   // --- INÍCIO DA CORREÇÃO DE CORS ---
   const allowedOrigins = [
-    'https://vetorizador.vercel.app', 
-    'http://localhost:3000', 
+    'https://vetorizador.vercel.app',
+    'http://localhost:3000',
     'http://127.0.0.1:5500' // Adicione outras portas se necessário
   ];
   const origin = req.headers.origin;
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       // Este erro ocorrerá se o Vercel não carregar a variável.
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'ERRO CRÍTICO: Chave GEMINI_API_KEY ausente',
         details: 'A variável de ambiente não foi carregada pelo servidor Vercel. Verifique as configurações de variáveis de ambiente na Vercel e o escopo (Production/Development).'
       });
@@ -82,11 +82,13 @@ export default async function handler(req, res) {
     const response = await result.response;
     let svgText = response.text();
 
-    // 1. Limpeza para remover cabeçalhos de markdown comuns (se ainda não estiver fazendo)
+    // 1. Limpeza para remover cabeçalhos de markdown, XML e caracteres invisíveis
     svgText = svgText
       .replace(/```xml/g, '')
       .replace(/```svg/g, '')
       .replace(/```/g, '')
+      .replace(/<\?xml.*\?>/g, '')  // ⭐ NOVO: Remove a declaração XML
+      .replace(/[\x00-\x1F\x7F]/g, '') // ⭐ NOVO: Remove caracteres de controle invisíveis
       .trim(); // ESSENCIAL: remove espaços e quebras de linha no início/fim
 
     // 2. Limpeza para remover texto ou comentários antes do <svg>
@@ -98,13 +100,14 @@ export default async function handler(req, res) {
     // 3. Limpeza para remover texto ou comentários após o </svg>
     const svgEndIndex = svgText.lastIndexOf('</svg>');
     if (svgEndIndex !== -1) {
-      svgText = svgText.substring(0, svgEndIndex + 6); // +6 para incluir o '/>'
+      svgText = svgText.substring(0, svgEndIndex + 6);
     }
 
     if (!svgText.startsWith('<svg') || !svgText.endsWith('</svg>')) {
-        throw new Error("O modelo não retornou um SVG limpo.");
+      console.error("SVG não limpo retornado:", svgText);
+      throw new Error("O modelo não retornou um SVG limpo. Verifique o log do Vercel.");
     }
-    
+
     return res.status(200).json({ svg: svgText });
 
   } catch (error) {
