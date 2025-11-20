@@ -1,8 +1,21 @@
-// api/vetorizar.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
-  // 1. Segurança: Aceitar apenas POST
+  // Adiciona cabeçalhos CORS para permitir que seu site acesse a API
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Em produção, troque '*' pelo seu domínio
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
+  // Trata requisição OPTIONS (preflight do navegador)
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -14,12 +27,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Imagem não fornecida' });
     }
 
-    // 2. Inicializar o Gemini com a chave do ambiente (ENV)
+    // Inicializa o Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // Usamos o modelo Flash por ser mais rápido e barato para essa tarefa
+    
+    // Define o modelo. O Gemini 1.5 Flash é o ideal.
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // 3. Preparar o prompt
     const prompt = `
       Você é um especialista em visão computacional.
       Analise esta imagem de satélite. O objetivo é criar uma máscara de segmentação binária para "Edificações".
@@ -39,19 +52,18 @@ export default async function handler(req, res) {
       },
     };
 
-    // 4. Chamar a IA
     const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
     let svgText = response.text();
 
-    // 5. Limpeza básica do texto retornado
+    // Limpeza
     svgText = svgText.replace(/```xml/g, '').replace(/```svg/g, '').replace(/```/g, '').trim();
 
-    // 6. Responder ao Frontend
     return res.status(200).json({ svg: svgText });
 
   } catch (error) {
     console.error("Erro no servidor Vercel:", error);
-    return res.status(500).json({ error: error.message });
+    // Retorna o erro detalhado para ajudar no debug se falhar novamente
+    return res.status(500).json({ error: error.message, details: error.toString() });
   }
 }
