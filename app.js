@@ -279,7 +279,8 @@ function converterPixelsParaLatLng(geojson, canvas, mapBounds) {
       // Simplifica para ficar com cara de "Building Footprint" (menos vértices)
       const simplified = turf.simplify(poly, { tolerance: TOLERANCIA_SIMPLIFICACAO, highQuality: true });
       
-      if (turf.area(simplified) > MIN_AREA_METERS) {
+      // AQUI é onde o filtro é aplicado.
+      if (turf.area(simplified) > MIN_AREA_METERS) { // Agora verifica se é maior que 0.1 m²
         simplified.properties = { 
           id: `imovel_${geojsonFeatures.length + featuresFinais.length + 1}`,
           area_m2: turf.area(simplified).toFixed(2)
@@ -293,6 +294,7 @@ function converterPixelsParaLatLng(geojson, canvas, mapBounds) {
 
   return turf.featureCollection(featuresFinais);
 }
+
 
 // --- EXPORTAÇÃO ---
 async function exportarShapefile() {
