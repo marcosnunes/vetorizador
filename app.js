@@ -240,8 +240,6 @@ function applyMorphologicalOperation(ctx, width, height, operationType, kernelSi
 
 function applyMorphologicalClean(ctx, width, height) {
   // Ajuste fino para remover ruídos e fechar telhados
-  applyMorphologicalOperation(ctx, width, height, 'erode', 3); // Remove pontos isolados
-  applyMorphologicalOperation(ctx, width, height, 'dilate', 3); // Restaura
   applyMorphologicalOperation(ctx, width, height, 'dilate', 5); // Fecha buracos
   applyMorphologicalOperation(ctx, width, height, 'erode', 5);  // Restaura borda
 }
