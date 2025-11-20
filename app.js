@@ -138,13 +138,17 @@ async function processarAreaDesenhada(bounds, selectionLayer) {
       const url = URL.createObjectURL(svgBlob);
 
       maskImage.onload = async () => {
+        //Forçar as dimensões de renderização da imagem
+        maskImage.width = width;
+        maskImage.height = height;
+
         // 3. Desenha a máscara em um canvas invisível
         const maskCanvas = document.createElement('canvas');
         maskCanvas.width = width;
         maskCanvas.height = height;
         const maskCtx = maskCanvas.getContext('2d');
 
-        // CORREÇÃO: Desenha especificando o tamanho (width, height)
+        // Desenha usando as dimensões forçadas
         maskCtx.drawImage(maskImage, 0, 0, width, height);
 
         URL.revokeObjectURL(url);
