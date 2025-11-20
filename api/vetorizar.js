@@ -1,9 +1,26 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
-  // Adiciona cabeçalhos CORS para permitir que seu site acesse a API
+  // --- INÍCIO DA CORREÇÃO DE CORS ---
+  const allowedOrigins = [
+    'https://vetorizador.vercel.app', 
+    'http://localhost:3000', 
+    'http://127.0.0.1:5500' // Adicione outras portas se necessário
+  ];
+  const origin = req.headers.origin;
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    // Se a origem não estiver na lista (ex: requisições diretas), 
+    // defina um valor padrão seguro ou omita o header (se preferir bloquear).
+    // Usaremos o valor de produção como fallback.
+    res.setHeader('Access-Control-Allow-Origin', 'https://vetorizador.vercel.app');
+  }
+  // --- FIM DA CORREÇÃO DE CORS ---
+
+  // Adiciona outros cabeçalhos CORS (manter estes)
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', 'https://vetorizador.vercel.app/');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader(
     'Access-Control-Allow-Headers',
@@ -29,9 +46,9 @@ export default async function handler(req, res) {
 
     // Inicializa o Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    
+
     // Define o modelo. O Gemini 1.5 Flash é o ideal.
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     const prompt = `
       Você é um especialista em visão computacional.
