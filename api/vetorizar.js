@@ -61,9 +61,11 @@ export default async function handler(req, res) {
 
     const prompt = `
       Você é um especialista em visão computacional e em análise de imagens aéreas de alta precisão.
-      Sua tarefa é analisar rigorosamente a imagem de satélite fornecida e criar uma **máscara de segmentação binária exclusiva** para **Edificações, Telhados e trapiches**. Perceba que a imagem pode conter outros elementos como vegetação, estradas, água, sombras, etc., mas você deve focar apenas nas estruturas construídas pelo homem.
-      
-      RETORNE APENAS CÓDIGO SVG VÁLIDO E NADA MAIS.
+      Sua tarefa é analisar rigorosamente a imagem de satélite fornecida e criar uma **máscara de segmentação binária exclusiva** para **Edificações, Telhados e trapiches**, excluindo estritamente elementos como vegetação, estradas, água, sombras e solo desmatado/exposto. Você deve focar **apenas** nas estruturas construídas pelo homem (benfeitorias).
+
+      RECOMENDAÇÃO: Dê prioridade à detecção clara dos **Trapiches** (piers/decks) que se estendem sobre a água, além das edificações principais.
+
+      REPORTE APENAS CÓDIGO SVG VÁLIDO E NADA MAIS.
 
       Regras estritas para o SVG:
       1. O SVG deve ter viewBox="0 0 ${width} ${height}" e NENHUM outro atributo (como 'width' ou 'height').
@@ -90,9 +92,9 @@ export default async function handler(req, res) {
       .replace(/```xml/g, '')
       .replace(/```svg/g, '')
       .replace(/```/g, '')
-      .replace(/<\?xml.*\?>/g, '')  
-      .replace(/[\x00-\x1F\x7F]/g, '') 
-      .trim(); 
+      .replace(/<\?xml.*\?>/g, '')
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      .trim();
 
     // 2. Limpeza para remover texto ou comentários antes do <svg>
     const svgStartIndex = svgText.indexOf('<svg');
@@ -108,12 +110,12 @@ export default async function handler(req, res) {
 
     // O replace garante que, mesmo se o Gemini retornar o xmlns, ele não o duplique
     svgText = svgText.replace(
-      /<svg\s+viewBox/, 
+      /<svg\s+viewBox/,
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox'
     );
 
     if (!svgText.startsWith('<svg') || !svgText.endsWith('</svg>')) {
-        throw new Error("O modelo não retornou um SVG limpo.");
+      throw new Error("O modelo não retornou um SVG limpo.");
     }
 
     return res.status(200).json({ svg: svgText });

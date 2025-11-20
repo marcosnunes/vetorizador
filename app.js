@@ -249,7 +249,7 @@ function converterPixelsParaLatLng(geojson, canvas, mapBounds) {
   const imgHeight = canvas.height;
   const featuresFinais = [];
 
-  const MIN_AREA_METERS = 0.1; // Área mínima para considerar um edifício
+  const MIN_AREA_METERS = 5.0; // Área mínima para considerar um edifício
   const TOLERANCIA_SIMPLIFICACAO = 0.000005;
 
   if (!geojson || !geojson.features) return turf.featureCollection([]);
@@ -280,7 +280,7 @@ function converterPixelsParaLatLng(geojson, canvas, mapBounds) {
       const simplified = turf.simplify(poly, { tolerance: TOLERANCIA_SIMPLIFICACAO, highQuality: true });
       
       // AQUI é onde o filtro é aplicado.
-      if (turf.area(simplified) > MIN_AREA_METERS) { // Agora verifica se é maior que 0.1 m²
+      if (turf.area(simplified) > MIN_AREA_METERS) { // Agora verifica se é maior que 5.0 m²
         simplified.properties = { 
           id: `imovel_${geojsonFeatures.length + featuresFinais.length + 1}`,
           area_m2: turf.area(simplified).toFixed(2)
