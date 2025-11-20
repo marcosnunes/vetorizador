@@ -63,12 +63,12 @@ export default async function handler(req, res) {
       Você é um especialista em visão computacional.
       Analise esta imagem de satélite. O objetivo é criar uma máscara de segmentação binária para "Edificações".
       
-      RETORNE APENAS CÓDIGO SVG VÁLIDO.
+      RETORNE APENAS CÓDIGO SVG VÁLIDO E NADA MAIS.
       Regras:
       1. O SVG deve ter viewBox="0 0 ${width} ${height}".
       2. O fundo deve ser preto (<rect width="100%" height="100%" fill="black"/>).
       3. Desenhe polígonos brancos (fill="white") exatamente sobre cada telhado.
-      4. SEM texto markdown, SEM explicações. Apenas a string bruta do <svg>...</svg>.
+      4. SEM texto, SEM explicação, SEM markdown, SEM comentários. Comece com <svg> e termine com </svg>.
     `;
 
     const imagePart = {
@@ -82,9 +82,29 @@ export default async function handler(req, res) {
     const response = await result.response;
     let svgText = response.text();
 
-    // Limpeza
-    svgText = svgText.replace(/```xml/g, '').replace(/```svg/g, '').replace(/```/g, '').trim();
+    // 1. Limpeza para remover cabeçalhos de markdown comuns (se ainda não estiver fazendo)
+    svgText = svgText
+      .replace(/```xml/g, '')
+      .replace(/```svg/g, '')
+      .replace(/```/g, '')
+      .trim(); // ESSENCIAL: remove espaços e quebras de linha no início/fim
 
+    // 2. Limpeza para remover texto ou comentários antes do <svg>
+    const svgStartIndex = svgText.indexOf('<svg');
+    if (svgStartIndex !== -1) {
+      svgText = svgText.substring(svgStartIndex);
+    }
+
+    // 3. Limpeza para remover texto ou comentários após o </svg>
+    const svgEndIndex = svgText.lastIndexOf('</svg>');
+    if (svgEndIndex !== -1) {
+      svgText = svgText.substring(0, svgEndIndex + 6); // +6 para incluir o '/>'
+    }
+
+    if (!svgText.startsWith('<svg') || !svgText.endsWith('</svg>')) {
+        throw new Error("O modelo não retornou um SVG limpo.");
+    }
+    
     return res.status(200).json({ svg: svgText });
 
   } catch (error) {
