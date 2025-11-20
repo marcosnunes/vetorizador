@@ -106,7 +106,7 @@ export default async function handler(req, res) {
     // O replace garante que, mesmo se o Gemini retornar o xmlns, ele não o duplique
     svgText = svgText.replace(
       /<svg\s+viewBox/, 
-      '<svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" viewBox'
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox'
     );
 
     if (!svgText.startsWith('<svg') || !svgText.endsWith('</svg>')) {
