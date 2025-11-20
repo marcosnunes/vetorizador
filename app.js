@@ -16,7 +16,9 @@ try {
 }
 
 // --- MAPA ---
-const map = L.map('map').setView([-25.706923, -52.385530], 12);
+// Centro do mapa mantido
+const MAP_CENTER = [-25.706923, -52.385530]; 
+const map = L.map('map').setView(MAP_CENTER, 15);
 
 const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   attribution: 'Tiles &copy; Esri',
@@ -31,15 +33,21 @@ map.addLayer(drawnItems);
 
 const drawControl = new L.Control.Draw({
   edit: { featureGroup: drawnItems },
-  draw: { polygon: true, marker: false, polyline: false, circle: false, rectangle: false }
+  draw: { 
+    polygon: {
+      shapeOptions: {
+        color: '#007bff', 
+        fillOpacity: 0.1
+      }
+    }, 
+    marker: false, polyline: false, circle: false, rectangle: false }
 });
 map.addControl(drawControl);
 
 // --- EVENTOS DO MAPA ---
 map.on(L.Draw.Event.CREATED, (e) => {
   if (e.layerType === 'polygon') {
-    drawnItems.clearLayers();
-    geojsonFeatures.length = 0; // Limpa features anteriores
+    geojsonFeatures.length = 0; 
     
     if (debugMaskLayer) {
       map.removeLayer(debugMaskLayer);
@@ -48,14 +56,14 @@ map.on(L.Draw.Event.CREATED, (e) => {
 
     const layer = e.layer;
     const bounds = layer.getBounds();
-    layer.remove(); // Remove o desenho manual para não atrapalhar a captura
-
-    // Pequeno delay para garantir que a UI atualizou
+    drawnItems.addLayer(layer); 
+    
+    // O polígono de seleção manual só é removido após o processamento bem-sucedido
     setTimeout(() => processarAreaDesenhada(bounds), 500);
   }
 });
 
-// --- FUNÇÃO DE COMUNICAÇÃO COM A API ---
+// --- FUNÇÃO DE COMUNICAÇÃO COM A API (REAL) ---
 async function chamarBackendGemini(base64Image, width, height) {
   // URL relativa: funciona no localhost:3000 e no vercel.app
   const url = '/api/vetorizar'; 
@@ -63,12 +71,13 @@ async function chamarBackendGemini(base64Image, width, height) {
   console.log("Enviando imagem para processamento no servidor...");
 
   try {
+    // 1. CHAMA O ENDPOINT REAL DO VERCEL
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         imageBase64: base64Image,
-        width: width,
+        width: width, // Envia as dimensões capturadas
         height: height
       })
     });
@@ -100,6 +109,7 @@ async function processarAreaDesenhada(bounds) {
   leafletImage(map, async (err, mainCanvas) => {
     if (err) {
       loader.style.display = 'none';
+      drawnItems.clearLayers(); 
       alert("Erro ao capturar mapa: " + err.message);
       return;
     }
@@ -122,21 +132,26 @@ async function processarAreaDesenhada(bounds) {
 
       // 2. Renderiza o SVG em uma imagem para extrair pixels
       const maskImage = new Image();
+      // O SVG retornado terá o viewBox ajustado (graças ao vetorizar.js)
       const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
       const url = URL.createObjectURL(svgBlob);
 
       maskImage.onload = async () => {
         // 3. Desenha a máscara em um canvas invisível
         const maskCanvas = document.createElement('canvas');
-        maskCanvas.width = width;
+        
+        // CORREÇÃO ESSENCIAL: O Canvas de processamento DEVE ter as dimensões exatas 
+        // da imagem capturada para que as coordenadas do SVG e a conversão Lat/Lng 
+        // funcionem corretamente.
+        maskCanvas.width = width; 
         maskCanvas.height = height;
+        
         const maskCtx = maskCanvas.getContext('2d');
-        maskCtx.drawImage(maskImage, 0, 0);
+        maskCtx.drawImage(maskImage, 0, 0, width, height);
         
         URL.revokeObjectURL(url);
 
         // DEBUG: Mostra a máscara no mapa (opcional)
-        
         if (debugMaskLayer) map.removeLayer(debugMaskLayer);
         debugMaskLayer = L.imageOverlay(maskCanvas.toDataURL(), bounds, { opacity: 0.5 });
         debugMaskLayer.addTo(map);
@@ -156,15 +171,18 @@ async function processarAreaDesenhada(bounds) {
            const geojsonStr = vetorizar_imagem(base64Mask);
            const geojsonResult = JSON.parse(geojsonStr);
            
-           // Converte coordenadas de pixel (0,0) para Lat/Lng reais
+           // Converte coordenadas de pixel para Lat/Lng reais
            const geojsonConvertido = converterPixelsParaLatLng(geojsonResult, maskCanvas, bounds);
            
            if (geojsonConvertido.features.length === 0) {
              alert("A IA não detectou construções nesta área.");
+             drawnItems.clearLayers(); 
            } else {
              const poligonosVetorizados = L.geoJSON(geojsonConvertido, { 
                style: { color: '#00ffcc', weight: 2, fillOpacity: 0.3 } 
              });
+             // Remove o polígono de seleção manual e adiciona os vetores
+             drawnItems.clearLayers(); 
              drawnItems.addLayer(poligonosVetorizados);
              // Guarda para exportação
              geojsonFeatures.push(...geojsonConvertido.features);
@@ -173,6 +191,7 @@ async function processarAreaDesenhada(bounds) {
         } catch (e) {
            console.error("Erro no processo de vetorização (WASM/Turf):", e);
            alert("Erro ao processar vetores.");
+           drawnItems.clearLayers(); 
         }
         
         loader.style.display = 'none';
@@ -188,12 +207,13 @@ async function processarAreaDesenhada(bounds) {
       console.error("Erro Fatal:", error);
       alert("Erro: " + error.message);
       loader.style.display = 'none';
+      drawnItems.clearLayers(); 
     }
 
   }, { scale: 1, tileLayer: satelliteMap, mapBounds: bounds });
 }
 
-// --- UTILITÁRIOS ---
+// --- UTILITÁRIOS (Sem Alterações) ---
 
 function yieldToMain() {
   return new Promise(resolve => setTimeout(resolve, 0));
@@ -208,14 +228,12 @@ function applyMorphologicalOperation(ctx, width, height, operationType, kernelSi
   const comparison = isDilate ? (a, b) => a > b : (a, b) => a < b;
   const initialValue = isDilate ? 0 : 255;
 
-  // Simples implementação de morfologia binária
   const data = originalData.data;
   const outData = processedData.data;
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       let bestVal = initialValue;
-      // Otimização: verificar apenas o canal vermelho já que é p&b
       for (let ky = -k_offset; ky <= k_offset; ky++) {
         for (let kx = -k_offset; kx <= k_offset; kx++) {
           const px = x + kx;
@@ -229,19 +247,18 @@ function applyMorphologicalOperation(ctx, width, height, operationType, kernelSi
         }
       }
       const outIndex = (y * width + x) * 4;
-      outData[outIndex] = bestVal;     // R
-      outData[outIndex + 1] = bestVal; // G
-      outData[outIndex + 2] = bestVal; // B
-      outData[outIndex + 3] = 255;     // Alpha
+      outData[outIndex] = bestVal;     
+      outData[outIndex + 1] = bestVal; 
+      outData[outIndex + 2] = bestVal; 
+      outData[outIndex + 3] = 255;     
     }
   }
   ctx.putImageData(processedData, 0, 0);
 }
 
 function applyMorphologicalClean(ctx, width, height) {
-  // Ajuste fino para remover ruídos e fechar telhados
-  applyMorphologicalOperation(ctx, width, height, 'dilate', 5); // Fecha buracos
-  applyMorphologicalOperation(ctx, width, height, 'erode', 5);  // Restaura borda
+  applyMorphologicalOperation(ctx, width, height, 'dilate', 5); 
+  applyMorphologicalOperation(ctx, width, height, 'erode', 5);  
 }
 
 function converterPixelsParaLatLng(geojson, canvas, mapBounds) {
@@ -249,13 +266,12 @@ function converterPixelsParaLatLng(geojson, canvas, mapBounds) {
   const imgHeight = canvas.height;
   const featuresFinais = [];
 
-  const MIN_AREA_METERS = 5.0; // Área mínima para considerar um edifício
+  const MIN_AREA_METERS = 5.0; 
   const TOLERANCIA_SIMPLIFICACAO = 0.000005;
 
   if (!geojson || !geojson.features) return turf.featureCollection([]);
 
   geojson.features.forEach(feature => {
-    // Garante que é polígono
     if (!feature.geometry || feature.geometry.type !== 'Polygon') return;
     
     const coords = feature.geometry.coordinates[0];
@@ -276,11 +292,9 @@ function converterPixelsParaLatLng(geojson, canvas, mapBounds) {
 
     try {
       const poly = turf.polygon([newCoords]);
-      // Simplifica para ficar com cara de "Building Footprint" (menos vértices)
       const simplified = turf.simplify(poly, { tolerance: TOLERANCIA_SIMPLIFICACAO, highQuality: true });
       
-      // AQUI é onde o filtro é aplicado.
-      if (turf.area(simplified) > MIN_AREA_METERS) { // Agora verifica se é maior que 5.0 m²
+      if (turf.area(simplified) > MIN_AREA_METERS) {
         simplified.properties = { 
           id: `imovel_${geojsonFeatures.length + featuresFinais.length + 1}`,
           area_m2: turf.area(simplified).toFixed(2)
@@ -288,7 +302,7 @@ function converterPixelsParaLatLng(geojson, canvas, mapBounds) {
         featuresFinais.push(simplified);
       }
     } catch (e) {
-      // Ignora polígonos inválidos gerados pelo trace
+      // Ignora polígonos inválidos
     }
   });
 
@@ -319,6 +333,7 @@ async function exportarShapefile() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    alert(`Exportação concluída! Foram exportados ${geojsonFeatures.length} polígonos.`);
   } catch (e) { 
     console.error("Erro ao exportar:", e);
     alert("Erro ao gerar arquivo ZIP.");
