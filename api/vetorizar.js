@@ -61,7 +61,7 @@ export default async function handler(req, res) {
 
     const prompt = `
       Você é um especialista em visão computacional e em análise de imagens aéreas de alta precisão.
-      Sua tarefa é analisar rigorosamente a imagem de satélite fornecida e criar uma **máscara de segmentação binária exclusiva** para **Edificações e Telhados** **trapiches** **árvores** **cursos d'água** **estradas** **ruas e avenidas**.
+      Sua tarefa é analisar rigorosamente a imagem de satélite fornecida e criar uma **máscara de segmentação binária exclusiva** para **Edificações e Telhados** **trapiches**.
       
       RETORNE APENAS CÓDIGO SVG VÁLIDO E NADA MAIS.
 
