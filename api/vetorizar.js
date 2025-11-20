@@ -1,9 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "esm.run/@google/generative-ai";
 
 export default async function handler(req, res) {
   // Adiciona cabeçalhos CORS para permitir que seu site acesse a API
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Em produção, troque '*' pelo seu domínio
+  res.setHeader('Access-Control-Allow-Origin', 'https://vetorizador.vercel.app/');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader(
     'Access-Control-Allow-Headers',
