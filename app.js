@@ -1,4 +1,4 @@
-import init, { vetorizar_imagem } from './pkg/vetoriza.js'; // CORRIGIDO
+import init, { vetorizar_imagem } from './pkg/vetoriza.js';
 
 // --- CONFIGURAÇÃO INICIAL ---
 const loader = document.getElementById('loader-overlay');
