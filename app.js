@@ -118,6 +118,8 @@ async function processarAreaDesenhada(bounds) {
       const svgString = await chamarBackendGemini(base64Full, width, height);
       console.log("SVG recebido da IA.");
 
+      console.log("Conteúdo do SVG (Debug):", svgString);
+
       // 2. Renderiza o SVG em uma imagem para extrair pixels
       const maskImage = new Image();
       const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
