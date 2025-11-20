@@ -65,13 +65,15 @@ export default async function handler(req, res) {
 
       RECOMENDAÇÃO: Dê prioridade à detecção clara dos **Trapiches** (piers/decks) que se estendem sobre a água, além das edificações principais.
 
+      **REGRA CRÍTICA: Se não houver edifícios visíveis na imagem, o SVG deve retornar SOMENTE a tag <rect fill="black"/> e NENHUM outro polígono.**
+
       REPORTE APENAS CÓDIGO SVG VÁLIDO E NADA MAIS.
 
       Regras estritas para o SVG:
       1. O SVG deve ter viewBox="0 0 ${width} ${height}" e NENHUM outro atributo (como 'width' ou 'height').
       2. O fundo deve ser preto: **<rect width="100%" height="100%" fill="black"/>**.
-      3. Desenhe polígonos brancos: use **<polygon fill="white" points="..."/>** (preferencialmente) ou **<path fill="white" d="..."/>** para cobrir exatamente o footprint de cada telhado/edificação/benfeitoria detectada.
-      4. A geometria deve ser o mais precisa possível.
+      3. Desenhe polígonos brancos: use **<polygon fill="white" points="..."/>** (preferencialmente) ou **<path fill="white" d="..."/>** para cobrir exatamente o footprint de cada telhado/edificação/benfeitoria **DETECTADA** e **VISÍVEL** na imagem.
+      4. A geometria deve ser o mais precisa possível e **corresponder à forma e localização dos objetos na imagem de entrada**.
       5. SEM texto, SEM explicação, SEM markdown, SEM comentários, SEM tag de XML declaration (<?xml...?>).
       6. Comece com <svg> e termine com </svg>.
     `;
